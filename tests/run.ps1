@@ -28,11 +28,14 @@ Assert-True ('--no-upgrade' -in $args) 'no upgrade'
 Assert-True ('--allow-reboot' -notin $args) 'no reboot'
 Assert-True ('--force' -notin $args -and '--ignore-security-hash' -notin $args) 'no force/hash bypass'
 Assert-True ($args[$args.IndexOf('--source')+1] -eq 'winget') 'fixed source'
-Assert-True ((Protect-Text 'Authorization=abc access_token=xyz https://example.test/a?signature=abc') -notmatch '=abc|=xyz|signature=abc') 'safe log redaction'
-Assert-True ((Protect-Text 'C:\Users\PrivateName\Pictures') -notmatch 'PrivateName') 'user path redaction'
+Assert-True ((Protect-Text 'Authorization: Bearer fixture_access_value access_token=fixture_refresh_value https://example.test/a?signature=fixture_query_value') -notmatch 'fixture_access_value|fixture_refresh_value|fixture_query_value') 'safe log redaction'
+Assert-True ((Protect-Text 'C:\Users\홍 길동\Pictures') -notmatch '홍 길동') 'user path redaction'
 Assert-True ((Get-OverallExitCode @((New-PackageResult x 'PRESENT_COMPATIBLE' SKIP))) -eq 0) 'success exit'
 Assert-True ((Get-OverallExitCode @((New-PackageResult x FAILED INSTALL))) -eq 1) 'failure exit'
 Assert-True ((Get-OverallExitCode @((New-PackageResult x REBOOT_REQUIRED INSTALL))) -eq 2) 'reboot requires owner'
+Assert-True (Test-RebootRequiredExitCode -1978334966) 'signed WinGet reboot HRESULT'
+Assert-True (Test-RebootRequiredExitCode ([uint32]2316632330)) 'unsigned WinGet reboot HRESULT'
+Assert-True (-not (Test-RebootRequiredExitCode 99)) 'general failure is not reboot-required'
 
 # Unit fixtures override OS/native boundaries. They never call an installer.
 $script:present=$true; $script:compatible=$true; $script:calls=0; $script:nativeCode=0; $script:appear=$true
@@ -66,4 +69,10 @@ Assert-True ($r.status -eq 'INSTALLED') 'retry after failure succeeds'
 $script:present=$false; $script:nativeCode=3010
 $r = Invoke-PackageStep $n Install
 Assert-True ($r.status -eq 'REBOOT_REQUIRED') 'reboot is not initiated by bootstrap'
+$script:nativeCode=-1978334966
+$r = Invoke-PackageStep $n Install
+Assert-True ($r.status -eq 'REBOOT_REQUIRED' -and $r.installerExitCode -eq -1978334966) 'WinGet signed reboot HRESULT => owner action'
+$script:nativeCode=[uint32]2316632330
+$r = Invoke-PackageStep $n Install
+Assert-True ($r.status -eq 'REBOOT_REQUIRED' -and (ConvertTo-UnsignedWin32ExitCode $r.installerExitCode) -eq 2316632330) 'WinGet unsigned reboot HRESULT => owner action'
 Write-Host ('TOTAL_PASS=' + $script:count)

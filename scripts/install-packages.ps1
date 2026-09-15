@@ -20,7 +20,7 @@ function Invoke-PackageStep {
     $winget = Get-Command winget.exe -CommandType Application -ErrorAction Stop
     Write-Host ('[INSTALLING] ' + $Package.Name)
     $run = Invoke-Native $winget.Source (Get-InstallArguments $Package)
-    if ($run.ExitCode -in @(3010,1641)) { return New-PackageResult $Package.Id 'REBOOT_REQUIRED' 'INSTALL' '' $run.ExitCode 'Restart manually when convenient, then Verify.' $requested }
+    if (Test-RebootRequiredExitCode $run.ExitCode) { return New-PackageResult $Package.Id 'REBOOT_REQUIRED' 'INSTALL' '' $run.ExitCode 'Restart manually when convenient, then Verify.' $requested }
     Update-ProcessPath
     $after = Get-PackageState $Package
     if ($run.ExitCode -eq 0 -and $after.Present -and $after.Compatible) { return New-PackageResult $Package.Id 'INSTALLED' 'INSTALL' $after.Version $run.ExitCode '' $requested }
