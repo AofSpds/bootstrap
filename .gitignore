@@ -1,0 +1,10 @@
+logs/
+artifacts/
+*.log
+*.zip
+.env
+.env.*
+!.env.example
+*.local.*
+.DS_Store
+Thumbs.db
