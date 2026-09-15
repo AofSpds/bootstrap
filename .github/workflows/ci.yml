@@ -11,7 +11,9 @@ jobs:
           persist-credentials: false
       - name: Windows PowerShell 5.1 parser and mocked tests
         shell: powershell
-        run: ./tests/run.ps1
+        run: |
+          ./tests/run.ps1
+          ./tests/logs-and-catalogue.ps1
   powershell-7:
     runs-on: windows-latest
     steps:
@@ -20,7 +22,9 @@ jobs:
           persist-credentials: false
       - name: PowerShell 7 parser and mocked tests
         shell: pwsh
-        run: ./tests/run.ps1
+        run: |
+          ./tests/run.ps1
+          ./tests/logs-and-catalogue.ps1
       - name: Package source candidate
         shell: pwsh
         run: |

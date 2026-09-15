@@ -2,6 +2,7 @@ function Get-InstallArguments {
     param([hashtable]$Package)
     $args = @('install','--id',$Package.Id,'--exact','--source','winget','--no-upgrade','--silent','--disable-interactivity','--accept-source-agreements','--accept-package-agreements')
     if ($Package['Scope']) { $args += @('--scope',$Package['Scope']) }
+    if ($Package['InstallerType']) { $args += @('--installer-type',$Package['InstallerType']) }
     if ($Package['PinnedVersion']) { $args += @('--version',$Package['PinnedVersion']) }
     if ($Package['RequiresVirtualization']) { $args += '--skip-dependencies' }
     return $args

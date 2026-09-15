@@ -63,12 +63,26 @@ function Get-OverallExitCode {
     return 0
 }
 
+function ConvertTo-SafeResultsJson {
+    param([object[]]$Results)
+    $safe = @()
+    foreach ($result in $Results) {
+        $row = [ordered]@{}
+        foreach ($property in $result.PSObject.Properties) {
+            if ($property.Value -is [string]) { $row[$property.Name] = Protect-Text $property.Value }
+            else { $row[$property.Name] = $property.Value }
+        }
+        $safe += [pscustomobject]$row
+    }
+    return ConvertTo-Json -InputObject @($safe) -Depth 5
+}
+
 function Save-SafeResults {
     param([object[]]$Results)
     if ([string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) { return }
     $directory = Join-Path $env:LOCALAPPDATA 'MitchellBootstrap\logs'
     [void](New-Item -ItemType Directory -Path $directory -Force)
     $path = Join-Path $directory ((Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '.json')
-    $json = ConvertTo-Json -InputObject @($Results) -Depth 5
-    [IO.File]::WriteAllText($path, (Protect-Text $json), (New-Object Text.UTF8Encoding($false)))
+    $json = ConvertTo-SafeResultsJson $Results
+    [IO.File]::WriteAllText($path, $json, (New-Object Text.UTF8Encoding($false)))
 }
