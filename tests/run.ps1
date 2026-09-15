@@ -69,10 +69,10 @@ Assert-True ($r.status -eq 'INSTALLED') 'retry after failure succeeds'
 $script:present=$false; $script:nativeCode=3010
 $r = Invoke-PackageStep $n Install
 Assert-True ($r.status -eq 'REBOOT_REQUIRED') 'reboot is not initiated by bootstrap'
-$script:nativeCode=-1978334966
+$script:present=$false; $script:nativeCode=-1978334966
 $r = Invoke-PackageStep $n Install
 Assert-True ($r.status -eq 'REBOOT_REQUIRED' -and $r.installerExitCode -eq -1978334966) 'WinGet signed reboot HRESULT => owner action'
-$script:nativeCode=[uint32]2316632330
+$script:present=$false; $script:nativeCode=[uint32]2316632330
 $r = Invoke-PackageStep $n Install
 Assert-True ($r.status -eq 'REBOOT_REQUIRED' -and (ConvertTo-UnsignedWin32ExitCode $r.installerExitCode) -eq 2316632330) 'WinGet unsigned reboot HRESULT => owner action'
 Write-Host ('TOTAL_PASS=' + $script:count)
