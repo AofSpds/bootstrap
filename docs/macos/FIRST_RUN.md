@@ -1,6 +1,6 @@
 # Mac 첫 실행
 
-macOS 14 이상 Mac용 개발환경 Bootstrap 후보입니다. **iPhone/iPad에 설치하는 앱이 아닙니다.** 실제 사용자 Mac 수락과 독립 IVA는 아직 별도 단계입니다.
+Apple Silicon·macOS 15 이상을 기본 설치 대상으로 하는 개발환경 Bootstrap 후보입니다. macOS 14에서는 설치 없이 Plan/Verify 진단만 가능하며 조치 필요(exit2)로 표시합니다. **iPhone/iPad에 설치하는 앱이 아닙니다.** 실제 사용자 Mac 수락과 독립 IVA는 아직 별도 단계입니다.
 
 ## 처음 한 번
 
@@ -27,12 +27,14 @@ CLT가 없으면 먼저 Apple의 안내에 따라 `xcode-select --install`을 �
 /bin/bash ./bootstrap.command --mode Install --optional Python,DBeaver
 ```
 
-이미 범위·약관을 확인한 자동 호출은 `--accept`를 명시합니다. 승인 없는 비대화 Install은 exit2로 종료합니다. Intel 설치 후보는 `--allow-unverified-intel`도 필요하며 이 플래그가 실제 Intel 수락 PASS를 뜻하지 않습니다.
+이미 범위·약관을 확인한 자동 호출은 `--accept`를 명시합니다. 승인 없는 비대화 Install은 exit2로 종료합니다. Intel은 Homebrew Tier 3이며 기본 권장 대상이 아닙니다. macOS 15 이상의 Intel 설치 후보는 `--allow-unverified-intel`도 필요하며, 이 플래그는 macOS 14 설치 차단을 해제하거나 실제 Intel 수락 PASS를 뜻하지 않습니다.
 
 ## 출력 읽기
 
 | 상태/코드 | 의미와 행동 |
 |---|---|
+| MACOS_15_REQUIRED_FOR_INSTALL | macOS 14 설치를 거부했습니다. OS 호환성을 확인하고 지원 Mac에서 설치하세요. |
+| MACOS_14_DIAGNOSTIC_ONLY | 기존 macOS 14 환경 진단만 수행하며 설치하지 않습니다. |
 | PLANNED / MISSING | Plan이 발견한 미설치 항목; 설치된 상태가 아님 |
 | DETECTED / EXISTING_PRESERVED | 기존 도구를 발견, 업그레이드 안 함. 앱 실행·로그인 수락은 별도 |
 | INSTALLED / DETECTION_PASSED | 호출 후 receipt와 CLI/App 구조 확인. 실제 업무 작동 보증 아님 |

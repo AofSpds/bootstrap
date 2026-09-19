@@ -6,7 +6,7 @@ ID: BOOTSTRAP-MAC-001 / 2026-09-19 / Writer: MITCHELL
 
 ## 1. 목적과 구조
 
-기존 Windows v0.1을 유지하면서 Mac도 개발을 시작할 수 있도록 한다. 초기 지원선은 macOS 14 이상, native Apple Silicon 우선이며 Intel은 명시적 opt-in 후보다. OS 최소선은 Homebrew 요구조건이지 모든 버전/하드웨어의 제품 수락 선언이 아니다.
+기존 Windows v0.1을 유지하면서 Mac도 개발을 시작할 수 있도록 한다. 초기 계획의 macOS 14 설치선은 2026-09-20 공식 원문 재확인으로 수정한다. 기본 설치선은 macOS 15 이상 native Apple Silicon이다. macOS 14는 Plan/Verify 진단 전용이고 Install은 차단한다. Intel은 Homebrew Tier 3이며 macOS 15 이상에서 명시적 opt-in만 허용하는 미수락 후보다. OS 최소선은 모든 버전/하드웨어의 제품 수락 선언이 아니다.
 
 ```text
 Windows bootstrap.bat → 기존 PowerShell/WinGet (바이트 보존)

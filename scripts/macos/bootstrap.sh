@@ -17,6 +17,7 @@ Bootstrap macOS v0.2 (author candidate; real Mac installation not yet accepted)
   --optional Python,PowerShell,SevenZip,Java21,Docker,DBeaver
   --accept                    approve the selected Install operation
   --allow-unverified-intel     explicitly allow the unverified Intel install path
+Install: macOS 15+; macOS 14 supports diagnostic Plan/Verify only.
 No arguments: Plan; in Terminal, bootstrap.command offers a menu.
 Exit 0: requested checks/plan complete, 1: failed, 2: user action needed.
 HELP
@@ -60,6 +61,14 @@ bm_preflight() {
   case "$version" in ''|*[!0-9.]*) bm_emit Platform ACTION_REQUIRED UNKNOWN_MACOS_VERSION; return 1 ;; esac
   major=${version%%.*}
   [ -n "$major" ] && [ "$major" -ge 14 ] 2>/dev/null || { bm_emit Platform ACTION_REQUIRED MACOS_14_REQUIRED; return 1; }
+  # Homebrew's 2026-09 support policy supersedes the original macOS 14 install floor.
+  # Diagnose old installations, but never start package or extension writes on macOS 14.
+  if [ "$major" -lt 15 ]; then
+    if [ "$BM_MODE" = Install ]; then
+      bm_emit Platform ACTION_REQUIRED MACOS_15_REQUIRED_FOR_INSTALL; return 1
+    fi
+    bm_emit Platform ACTION_REQUIRED MACOS_14_DIAGNOSTIC_ONLY
+  fi
   arch=$(bm_arch); arm=$(bm_arm_hardware); translated=$(bm_translated)
   if [ "$translated" = 1 ] || { [ "$arm" = 1 ] && [ "$arch" = x86_64 ]; }; then
     bm_emit Platform ACTION_REQUIRED REOPEN_NATIVE_TERMINAL; return 1

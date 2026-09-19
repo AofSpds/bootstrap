@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, macos-15-intel]
+        os: [macos-15, macos-15-intel]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
@@ -31,6 +31,7 @@ jobs:
           /bin/bash --version | head -1
           /bin/bash -n bootstrap.command
           python3 tests/macos/test_bootstrap.py
+          python3 tests/macos/test_platform_policy.py
       - name: Native read-only probes (not clean-Mac install acceptance)
         shell: bash
         run: |
@@ -45,7 +46,7 @@ jobs:
           fi
           echo "NATIVE_VERIFY_EXIT=$result (missing tools may require action; no install requested)"
       - name: Archive exact candidate without raw logs
-        if: matrix.os == 'macos-14'
+        if: matrix.os == 'macos-15'
         run: |
           mkdir -p artifacts
           git archive --format=tar.gz --prefix=bootstrap/ -o artifacts/bootstrap-macos-candidate.tar.gz HEAD
@@ -54,7 +55,7 @@ jobs:
           shasum -a 256 artifacts/bootstrap-macos-candidate.tar.gz > artifacts/SHA256SUMS.txt
           printf 'author command-boundary fixtures; native read-only probes; real install NOT_RUN; IVA NOT_RUN\n' > artifacts/SCOPE.txt
       - uses: actions/upload-artifact@v4
-        if: matrix.os == 'macos-14'
+        if: matrix.os == 'macos-15'
         with:
           name: bootstrap-macos-source
           path: artifacts/

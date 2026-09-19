@@ -5,7 +5,7 @@ fixture_has() { grep -Fqx -- "$1" "$FIXTURE/tools"; }
 fixture_receipt() { grep -Fqx -- "$1" "$FIXTURE/receipts"; }
 bm_os() { printf '%s' "${F_OS:-Darwin}"; }
 bm_arch() { printf '%s' "${F_ARCH:-arm64}"; }
-bm_os_version() { printf '%s' "${F_VERSION:-14.7}"; }
+bm_os_version() { printf '%s' "${F_VERSION:-15.0}"; }
 bm_uid() { printf '%s' "${F_UID:-501}"; }
 bm_arm_hardware() { printf '%s' "${F_ARM:-1}"; }
 bm_translated() { printf '%s' "${F_TRANSLATED:-0}"; }
