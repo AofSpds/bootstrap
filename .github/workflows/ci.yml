@@ -1,0 +1,41 @@
+name: Bootstrap author checks
+'on': [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  powershell-51:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Windows PowerShell 5.1 parser and mocked tests
+        shell: powershell
+        run: |
+          ./tests/run.ps1
+          ./tests/logs-and-catalogue.ps1
+  powershell-7:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: PowerShell 7 parser and mocked tests
+        shell: pwsh
+        run: |
+          ./tests/run.ps1
+          ./tests/logs-and-catalogue.ps1
+      - name: Package source candidate
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          git archive --format=zip --output=artifacts/bootstrap-candidate.zip HEAD
+          $hash = (Get-FileHash artifacts/bootstrap-candidate.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  bootstrap-candidate.zip" | Set-Content artifacts/SHA256SUMS.txt
+          $tree = git rev-parse 'HEAD^{tree}'
+          @{ commit=(git rev-parse HEAD); tree=$tree; scope='author mock/parser checks only'; cleanWindowsInstall='NOT_RUN'; iva='NOT_RUN' } | ConvertTo-Json | Set-Content artifacts/evidence.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-candidate
+          path: artifacts/
+          retention-days: 14
