@@ -1,6 +1,11 @@
 # bootstrap
 
-Windows 11 x64 개인 PC의 개발환경 설치·검사 도구입니다. **현재는 자체 점검 대상인 v0.1 후보이며, 깨끗한 PC 설치와 IVA 독립검증 완료를 뜻하지 않습니다.**
+Windows 11 x64와 macOS 개발환경을 준비하는 Bootstrap입니다.
+
+- Windows v0.1: PR #1 병합 완료. IVA-B001/B002 교정 재검증 PASS이며 실제 PC 설치 수락·릴리스는 별도입니다.
+- macOS v0.2: **작성자 구현 후보**. 아래 macOS 안내를 사용합니다. Windows의 과거 PASS를 macOS 검증으로 확대하지 않습니다.
+- macOS: `bootstrap.command` → [첫 실행](docs/macos/FIRST_RUN.md) · [설계·작업계획](docs/macos/WORK_PLAN_v0.2.md) · [시험 범위](docs/macos/ACCEPTANCE.md).
+- Windows: 기존 `bootstrap.bat` / `bootstrap.ps1` 경로와 아래 사용법을 보존합니다.
 
 ## 시작
 

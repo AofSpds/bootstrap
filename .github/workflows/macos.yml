@@ -1,0 +1,63 @@
+name: macOS Bootstrap author checks
+on:
+  pull_request:
+    paths:
+      - 'bootstrap.command'
+      - 'scripts/macos/**'
+      - 'config/macos/**'
+      - 'tests/macos/**'
+      - 'docs/macos/**'
+      - '.github/workflows/macos.yml'
+      - 'README.md'
+permissions:
+  contents: read
+jobs:
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Preserve Windows exact blobs
+        run: python3 tests/macos/check_windows_baseline.py
+      - name: Stock Bash syntax and isolated command-boundary fixtures
+        run: |
+          /bin/bash --version | head -1
+          /bin/bash -n bootstrap.command
+          python3 tests/macos/test_bootstrap.py
+          python3 tests/macos/test_platform_policy.py
+          python3 tests/macos/test_iva001_corrections.py
+      - name: Native read-only probes (not clean-Mac install acceptance)
+        shell: bash
+        run: |
+          set +e
+          /bin/bash bootstrap.command --mode Verify --profile Mobile > "$RUNNER_TEMP/bootstrap-native.txt" 2>&1
+          result=$?
+          set -e
+          cat "$RUNNER_TEMP/bootstrap-native.txt"
+          case "$result" in 0|2) ;; *) exit "$result" ;; esac
+          if grep -E 'INSTALLING|INSTALLED.DETECTION_PASSED' "$RUNNER_TEMP/bootstrap-native.txt"; then
+            echo 'Unexpected installation in Verify'; exit 1
+          fi
+          echo "NATIVE_VERIFY_EXIT=$result (missing tools may require action; no install requested)"
+      - name: Archive exact candidate without raw logs
+        if: matrix.os == 'macos-15'
+        run: |
+          mkdir -p artifacts
+          git archive --format=tar.gz --prefix=bootstrap/ -o artifacts/bootstrap-macos-candidate.tar.gz HEAD
+          git rev-parse HEAD > artifacts/COMMIT.txt
+          git rev-parse 'HEAD^{tree}' > artifacts/TREE.txt
+          shasum -a 256 artifacts/bootstrap-macos-candidate.tar.gz > artifacts/SHA256SUMS.txt
+          printf 'author command-boundary fixtures; native read-only probes; real install NOT_RUN; IVA NOT_RUN\n' > artifacts/SCOPE.txt
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'macos-15'
+        with:
+          name: bootstrap-macos-source
+          path: artifacts/
+          retention-days: 14
