@@ -47,21 +47,51 @@ bm_find_java() {
   [[ "$text" =~ version[[:space:]]\"([0-9]+)\. ]] || return 3
   [ "${BASH_REMATCH[1]}" = "$1" ] || return 2
 }
-bm_find_app() {
-  local base path ident exe
-  for base in /Applications "$HOME/Applications"; do
-    path="$base/$1"
-    if [ -e "$path" ] || [ -L "$path" ]; then
-      [ -f "$path/Contents/Info.plist" ] || return 3
-      ident=$(/usr/bin/plutil -extract CFBundleIdentifier raw -o - "$path/Contents/Info.plist" 2>/dev/null) || return 3
-      exe=$(/usr/bin/plutil -extract CFBundleExecutable raw -o - "$path/Contents/Info.plist" 2>/dev/null) || return 3
-      case "$exe" in ''|*/*|*..*) return 3 ;; esac
-      [ -n "$ident" ] && [ -x "$path/Contents/MacOS/$exe" ] || return 3
-      printf '%s' "$path"; return 0
-    fi
-  done
+bm_path_state() {
+  # 0: entry observed; 2: absence proven; 5: lookup uncertain (never install).
+  # A failed -e/-L is NOT ENOENT. Prove absence using a successful, shallow
+  # parent enumeration. No errno/localized-stderr parsing or new runtime is needed.
+  local path=$1 parent leaf pattern entries rc
+  case "$path" in /*) ;; *) return 5 ;; esac
+  while [ "$path" != / ] && [ "${path%/}" != "$path" ]; do path=${path%/}; done
+  if [ -e "$path" ] || [ -L "$path" ]; then return 0; fi
+  [ "$path" != / ] || return 5
+  parent=${path%/*}; [ -n "$parent" ] || parent=/
+  leaf=${path##*/}
+  case "$leaf" in ''|.|..) return 5 ;; esac
+  bm_path_state "$parent"; rc=$?
+  [ "$rc" = 0 ] || return "$rc"
+  [ -d "$parent" ] || return 5
+  (CDPATH= cd -- "$parent") >/dev/null 2>&1 || return 5
+  # Escape find's pattern metacharacters: HOME components are literal names.
+  pattern=${leaf//\\/\\\\}; pattern=${pattern//\*/\\*}
+  pattern=${pattern//\?/\\?}; pattern=${pattern//\[/\\[}
+  # Starting at parent/. makes ! -name . -prune visit direct children only.
+  # Capture paths privately; on enumeration/stat error, discard all output.
+  entries=$(/usr/bin/find -H "$parent/." ! -name . -prune -name "$pattern" -print 2>/dev/null) || return 5
+  [ -z "$entries" ] || return 5
   return 2
 }
+bm_app_field() { /usr/bin/plutil -extract "$1" raw -o - "$2" 2>/dev/null; }
+bm_find_app_in() {
+  local app=$1 base path ident exe rc found=''
+  shift
+  for base in "$@"; do
+    path="$base/$app"
+    bm_path_state "$path"; rc=$?
+    case "$rc" in 2) continue ;; 0) ;; *) return 5 ;; esac
+    [ -f "$path/Contents/Info.plist" ] || return 3
+    ident=$(bm_app_field CFBundleIdentifier "$path/Contents/Info.plist") || return 3
+    exe=$(bm_app_field CFBundleExecutable "$path/Contents/Info.plist") || return 3
+    case "$exe" in ''|*/*|*..*) return 3 ;; esac
+    [ -n "$ident" ] && [ -x "$path/Contents/MacOS/$exe" ] || return 3
+    [ -n "$found" ] || found=$path
+  done
+  # Even a healthy first location does not hide an uncertain second location.
+  [ -n "$found" ] || return 2
+  printf '%s' "$found"
+}
+bm_find_app() { bm_find_app_in "$1" /Applications "$HOME/Applications"; }
 bm_find_code() {
   local path
   path=$(bm_find_app 'Visual Studio Code.app') || return $?
@@ -89,7 +119,7 @@ bm_lock_acquire() {
   if [ -e "$base" ]; then
     [ -d "$base" ] && [ -O "$base" ] || return 1
   else
-    (umask 077; mkdir "$base") || return 1
+    (umask 077; mkdir "$base") 2>/dev/null || return 1
   fi
   BM_LOCK="$base/install.lock"
   (umask 077; mkdir "$BM_LOCK") 2>/dev/null || return 1

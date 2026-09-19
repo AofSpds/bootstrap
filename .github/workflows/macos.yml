@@ -32,6 +32,7 @@ jobs:
           /bin/bash -n bootstrap.command
           python3 tests/macos/test_bootstrap.py
           python3 tests/macos/test_platform_policy.py
+          python3 tests/macos/test_iva001_corrections.py
       - name: Native read-only probes (not clean-Mac install acceptance)
         shell: bash
         run: |

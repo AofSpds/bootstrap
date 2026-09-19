@@ -112,7 +112,7 @@ RECEIPTS
   return 1
 }
 bm_probe() {
-  # 0 detected, 2 missing, 3 existing but incompatible/broken, 4 PATH help required.
+  # 0 detected, 2 proven missing, 3 broken/incompatible, 4 PATH help, 5 lookup error.
   local path text major minor
   if [ -n "$BM_APP" ]; then bm_find_app "$BM_APP" >/dev/null; return $?; fi
   case "$BM_COMMAND" in java17) bm_find_java 17; return $? ;; java21) bm_find_java 21; return $? ;; esac
@@ -138,6 +138,7 @@ bm_process() {
     0) bm_emit "$id" DETECTED EXISTING_PRESERVED; return ;;
     3) bm_emit "$id" ACTION_REQUIRED EXISTING_TOOL_NEEDS_REPAIR; return ;;
     4) bm_emit "$id" ACTION_REQUIRED NODE_PATH_SETUP; return ;;
+    5) bm_emit "$id" FAILED APP_PATH_QUERY_FAILED; return ;;
     2) ;;
     *) bm_emit "$id" FAILED DETECTION_FAILED; return ;;
   esac
@@ -166,7 +167,7 @@ bm_process() {
 }
 bm_extensions() {
   [ "$BM_AI" != None ] || return 0
-  local extensions id found line rc
+  local extensions fresh id found line rc
   BM_CODE=$(bm_find_code 2>/dev/null) || { bm_emit AI ACTION_REQUIRED VSCODE_CLI_REQUIRED; return; }
   extensions=$(bm_code --list-extensions 2>/dev/null) || { bm_emit AI FAILED EXTENSION_QUERY_FAILED; return; }
   local selected=''
@@ -182,8 +183,16 @@ EXTENSIONS
       Verify) bm_emit "$id" ACTION_REQUIRED MISSING ;;
       Install)
         bm_code --install-extension "$id" </dev/null >/dev/null 2>&1; rc=$?
-        if [ "$rc" -ne 0 ]; then bm_emit "$id" FAILED "EXTENSION_EXIT_$rc"; continue; fi
-        extensions=$(bm_code --list-extensions 2>/dev/null) || { bm_emit "$id" FAILED EXTENSION_QUERY_FAILED; continue; }
+        # A write (including a partially failed one) invalidates the old snapshot.
+        # Never decide that the next extension is absent from failed/partial output.
+        if [ "$rc" -ne 0 ]; then bm_emit "$id" FAILED "EXTENSION_EXIT_$rc"; fi
+        fresh=$(bm_code --list-extensions 2>/dev/null) || {
+          bm_emit "$id" FAILED EXTENSION_QUERY_FAILED
+          bm_emit AI ACTION_REQUIRED EXTENSION_REFRESH_REQUIRED
+          return 1
+        }
+        extensions=$fresh
+        [ "$rc" -eq 0 ] || continue
         found=0
         while IFS= read -r line; do [ "$line" != "$id" ] || found=1; done <<EXTENSIONS
 $extensions
